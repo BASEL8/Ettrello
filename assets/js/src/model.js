@@ -99,14 +99,14 @@ export default {
     return this._lists[this._lists.length - 1];
   },
   removeList: function(id) {
-    return this._lists.map((list, index) => {
+    this._lists.forEach((list, index) => {
       if (list.id === id) {
         this._lists.splice(index, 1);
       }
     });
   },
   rename: function(id, newName) {
-    return this._lists.map(list => {
+    this._lists.forEach(list => {
       if (list.id === id) {
         list.name = newName;
       }
@@ -120,8 +120,8 @@ export default {
       hour: "numeric",
       minute: "numeric"
     };
-    this._lists.map(list => {
-      list.listItems.map(item => {
+    this._lists.forEach(list => {
+      list.listItems.forEach(item => {
         if (item.id === cardId) {
           item.text = name;
           item.itemDescription = description;
@@ -141,8 +141,8 @@ export default {
   },
   getCardObj: function(cardId) {
     let obj;
-    this._lists.map(list => {
-      list.listItems.map(item => {
+    this._lists.forEach(list => {
+      list.listItems.forEach(item => {
         if (item.id === cardId) {
           obj = item;
         }
@@ -158,7 +158,7 @@ export default {
       hour: "numeric",
       minute: "numeric"
     };
-    return this._lists.map(list => {
+    this._lists.forEach(list => {
       if (list.id === id) {
         list.listItemsId++;
         list.listItems.push({
@@ -173,7 +173,7 @@ export default {
     });
   },
   moveExistingCard: function(id, obj) {
-    this._lists.map(list => {
+    this._lists.forEach(list => {
       if (list.id === id) {
         list.listItems.push(obj);
       }
@@ -191,9 +191,9 @@ export default {
       }
     }
     //filter function collides with drag n drop somehow
-    // return this._lists.map(list => {
+    //  this._lists.forEach(list => {
     //   if (list.id === listId) {
-    //     list.listItems.map((item, index) => {
+    //     list.listItems.forEach((item, index) => {
     //       if (item.id === cardId) {
     //         list.listItems.splice(index, 1);
     //       }

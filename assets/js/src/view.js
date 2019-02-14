@@ -1,18 +1,13 @@
 import { listTemp } from "./template/listTemp";
 import { ulListTemp } from "./template/ulListTemp";
 export default {
-  init: function(data, target, miniControl) {
+  init: function(data, target, mainFunctions) {
     document.getElementById("listNav").innerHTML = this.renderNavList(data);
     listTemp(data, target);
-    data.map(element => {
-      miniControl.removeList(element.id);
-      miniControl.renameList(element.id, element.name);
-      miniControl.addCard(element.id, element.listItemsId);
-      miniControl.removeCard(element.id);
+    data.forEach(element => {
+      mainFunctions(element);
     });
-    miniControl.intersectionObserver(
-      document.querySelectorAll("#TodoListHolder .box")
-    );
+    this.intersectionObserver(target.children);
   },
   renderNavList: function(data) {
     let ul = "";
@@ -20,5 +15,10 @@ export default {
       ul += ulListTemp(element);
     });
     return ul;
+  },
+  intersectionObserver: function(t) {
+    [...t].forEach(li => {
+      $(`li a[href="#${li.id}"]`).height($(li).height() / 15);
+    });
   }
 };

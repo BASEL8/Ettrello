@@ -102,14 +102,14 @@
       return this._lists[this._lists.length - 1];
     },
     removeList: function(id) {
-      return this._lists.map((list, index) => {
+      this._lists.forEach((list, index) => {
         if (list.id === id) {
           this._lists.splice(index, 1);
         }
       });
     },
     rename: function(id, newName) {
-      return this._lists.map(list => {
+      this._lists.forEach(list => {
         if (list.id === id) {
           list.name = newName;
         }
@@ -123,8 +123,8 @@
         hour: "numeric",
         minute: "numeric"
       };
-      this._lists.map(list => {
-        list.listItems.map(item => {
+      this._lists.forEach(list => {
+        list.listItems.forEach(item => {
           if (item.id === cardId) {
             item.text = name;
             item.itemDescription = description;
@@ -144,8 +144,8 @@
     },
     getCardObj: function(cardId) {
       let obj;
-      this._lists.map(list => {
-        list.listItems.map(item => {
+      this._lists.forEach(list => {
+        list.listItems.forEach(item => {
           if (item.id === cardId) {
             obj = item;
           }
@@ -161,7 +161,7 @@
         hour: "numeric",
         minute: "numeric"
       };
-      return this._lists.map(list => {
+      this._lists.forEach(list => {
         if (list.id === id) {
           list.listItemsId++;
           list.listItems.push({
@@ -176,7 +176,7 @@
       });
     },
     moveExistingCard: function(id, obj) {
-      this._lists.map(list => {
+      this._lists.forEach(list => {
         if (list.id === id) {
           list.listItems.push(obj);
         }
@@ -194,9 +194,9 @@
         }
       }
       //filter function collides with drag n drop somehow
-      // return this._lists.map(list => {
+      //  this._lists.forEach(list => {
       //   if (list.id === listId) {
-      //     list.listItems.map((item, index) => {
+      //     list.listItems.forEach((item, index) => {
       //       if (item.id === cardId) {
       //         list.listItems.splice(index, 1);
       //       }
@@ -406,18 +406,13 @@
   }
 
   var view = {
-    init: function(data, target, miniControl) {
+    init: function(data, target, mainFunctions) {
       document.getElementById("listNav").innerHTML = this.renderNavList(data);
       listTemp(data, target);
-      data.map(element => {
-        miniControl.removeList(element.id);
-        miniControl.renameList(element.id, element.name);
-        miniControl.addCard(element.id, element.listItemsId);
-        miniControl.removeCard(element.id);
+      data.forEach(element => {
+        mainFunctions(element);
       });
-      miniControl.intersectionObserver(
-        document.querySelectorAll("#TodoListHolder .box")
-      );
+      this.intersectionObserver(target.children);
     },
     renderNavList: function(data) {
       let ul = "";
@@ -425,6 +420,11 @@
         ul += ulListTemp(element);
       });
       return ul;
+    },
+    intersectionObserver: function(t) {
+      [...t].forEach(li => {
+        $(`li a[href="#${li.id}"]`).height($(li).height() / 15);
+      });
     }
   };
 
@@ -436,7 +436,7 @@
   });
   let controller = {
     init: function() {
-      view.init(this.getAllData(), target, this.miniControl);
+      view.init(this.getAllData(), target, this.mainFunctions);
       this.dragDropHandler();
       this.editCardEvent();
     },
@@ -448,8 +448,10 @@
       let listId;
       let cardId;
 
-      let listGroupItem = Array.from(document.querySelectorAll(".list-group-item"));
-      listGroupItem.map(li => {
+      let listGroupItem = Array.from(
+        document.querySelectorAll(".list-group-item")
+      );
+      listGroupItem.forEach(li => {
         li.addEventListener("dragstart", function() {
           selectedLi = this;
           listId = controller.getListIdFromClass(this);
@@ -461,18 +463,21 @@
       });
 
       let lists = Array.from(document.querySelectorAll(".box"));
-      lists.map(list => {
+      lists.forEach(list => {
         list.addEventListener("dragover", function(e) {
           e.preventDefault();
         });
 
-        list.addEventListener("dragend", function () {
+        list.addEventListener("dragend", function() {
           selectedLi.classList.remove("d-none");
         });
 
         list.addEventListener("drop", function(e) {
           if (controller.getListIdFromId(this) !== listId) {
-            model.moveExistingCard(controller.getListIdFromId(this), model.getCardObj(cardId));
+            model.moveExistingCard(
+              controller.getListIdFromId(this),
+              model.getCardObj(cardId)
+            );
             model.removeCard(listId, cardId);
             controller.init();
           }
@@ -480,31 +485,43 @@
       });
     },
     editCardEvent: function() {
-      let editCardDoneBtns = Array.from(document.querySelectorAll(".editCardDone"));
-      editCardDoneBtns.map(btn => {
+      let editCardDoneBtns = Array.from(
+        document.querySelectorAll(".editCardDone")
+      );
+      editCardDoneBtns.forEach(btn => {
         let cardId = controller.getCardId(btn);
         let cardEditUI = document.querySelector(`#${cardId}`);
         let oldValue = "";
-        cardEditUI.querySelector("textarea").addEventListener("focus", function() {
+        cardEditUI
+          .querySelector("textarea")
+          .addEventListener("focus", function() {
             oldValue = this.value;
           });
         btn.addEventListener("click", function(e) {
           let inputName = cardEditUI.querySelector("input");
           let inputDescription = cardEditUI.querySelector("textarea");
-          model.editCard(inputName.value, inputDescription.value, cardId, oldValue);
+          model.editCard(
+            inputName.value,
+            inputDescription.value,
+            cardId,
+            oldValue
+          );
           let listItemName = document.querySelector(`.${cardId} > span`);
           listItemName.textContent = inputName.value;
           cardEditUI.querySelector("#accordion" + cardId).innerHTML = "";
-          model.getCardObj(cardId).itemDescriptionHistory.map((data, index) => {
-            cardEditUI.querySelector(
-              "#accordion" + cardId
-            ).innerHTML += descriptionHistory(data, index, cardId);
-          });
+          model
+            .getCardObj(cardId)
+            .itemDescriptionHistory.forEach((data, index) => {
+              cardEditUI.querySelector(
+                "#accordion" + cardId
+              ).innerHTML += descriptionHistory(data, index, cardId);
+            });
           oldValue = "";
         });
       });
     },
-    getListIdFromClass: function(element) { //used from inside list-structure to see which list the element is a children of
+    getListIdFromClass: function(element) {
+      //used from inside list-structure to see which list the element is a children of
       let regex = /list\d+/; //Sets a regex-definition to be used to the selected list.
       let parent = element; //(element.localName === "ul") ? element : element.parentNode;
       while (!regex.test(parent.className) || parent.localName !== "ul") {
@@ -516,7 +533,7 @@
     getListIdFromId(element) {
       let regex = /list\d+/;
       let parent = element;
-      while(!regex.test(parent.id)) {
+      while (!regex.test(parent.id)) {
         parent = parent.parentNode;
       }
       return parent.id.match(regex)[0];
@@ -529,65 +546,49 @@
       }
       return parent.id.match(regex)[0];
     },
-    miniControl: {
-      removeList: function(id) {
-        document
-          .getElementById(id)
-          .querySelector(".removeList")
-          .addEventListener("click", function() {
-            model.removeList(this.closest("div[id*='list']").id);
-            controller.init();
-          });
-      },
-      renameList: function(id, name) {
-        let parent = document.getElementById(id);
-        let renameBtn = parent.querySelector(".dropdown .renameList");
-        let dropdownBtn = document
-          .getElementById(id)
-          .querySelector(".btn.dropdown-toggle");
-        let input = document.getElementById("nameInput" + id);
-        let inputHolderDiv = input.parentElement;
-        renameBtn.addEventListener("click", function() {
-          input.value = name;
-          inputHolderDiv.classList.remove("d-none");
-          let changeBtn = parent.querySelector(".renameBtn");
-          changeBtn.addEventListener("click", function() {
-            model.rename(id, input.value);
-            controller.init();
-          });
+    mainFunctions: function(element) {
+      let MainElement = document.getElementById(element.id);
+      let RemoveListBtn = MainElement.querySelector(".removeList");
+      let RenameBtn = MainElement.querySelector(".dropdown .renameList");
+      let Input = document.getElementById("nameInput" + element.id);
+      let InputHolderDiv = Input.parentElement;
+      let CardHolderDiv = document.getElementById(`addCardBtn${element.id}`);
+      let TextInput = document.getElementById(`textInput${element.id}`);
+      let TextDescription = document.getElementById(`textAreaInput${element.id}`);
+      let AddCardBtn = MainElement.querySelector(`button[type="submit"]`);
+      let RemoveCardBtn = MainElement.querySelectorAll(".removeCard");
+
+      RemoveListBtn.addEventListener("click", function() {
+        model.removeList(this.closest("div[id*='list']").id);
+        controller.init();
+      });
+
+      RenameBtn.addEventListener("click", function() {
+        Input.value = element.name;
+        InputHolderDiv.classList.remove("d-none");
+        let ChangeBtn = MainElement.querySelector(".renameBtn");
+        ChangeBtn.addEventListener("click", function() {
+          model.rename(element.id, Input.value);
+          controller.init();
         });
-      },
-      addCard: function(id) {
-        let cardHolderDiv = document.getElementById(`addCardBtn${id}`);
-        let textInput = document.getElementById(`textInput${id}`);
-        let textDescription = document.getElementById(`textAreaInput${id}`);
-        let addCardBtn = document
-          .getElementById(id)
-          .querySelector(`button[type="submit"]`);
-        addCardBtn.addEventListener("click", function(e) {
-          e.preventDefault();
-          if (textInput.value.length !== 0) {
-            model.addCard(id, textInput.value, textDescription.value);
-            textInput.value = "";
-            textDescription.value = "";
-            cardHolderDiv.classList.remove(`show`);
-            controller.init();
-          }
+      });
+
+      AddCardBtn.addEventListener("click", function(e) {
+        e.preventDefault();
+        if (TextInput.value.length !== 0) {
+          model.addCard(element.id, TextInput.value, TextDescription.value);
+          TextInput.value = "";
+          TextDescription.value = "";
+          CardHolderDiv.classList.remove(`show`);
+          controller.init();
+        }
+      });
+      RemoveCardBtn.forEach(Btn => {
+        Btn.addEventListener("click", function() {
+          model.removeCard(element.id, this.getAttribute("data-set"));
+          controller.init();
         });
-      },
-      removeCard: function(listId) {
-        [...document.querySelectorAll(".removeCard")].map(removeBtn => {
-          removeBtn.addEventListener("click", function() {
-            model.removeCard(listId, this.getAttribute("data-set"));
-            controller.init();
-          });
-        });
-      },
-      intersectionObserver: function(t) {
-        [...t].map(li => {
-          $(`li a[href="#${li.id}"]`).height($(li).height() / 15);
-        });
-      }
+      });
     }
   };
   controller.init();
